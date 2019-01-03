@@ -37,7 +37,7 @@ THE SOFTWARE.
  */
 template <typename T>
 __global__ void
-vector_square(hipLaunchParm lp, T *C_d, const T *A_d, size_t N)
+vector_square(T *C_d, const T *A_d, size_t N)
 {
     size_t offset = (hipBlockIdx_x * hipBlockDim_x + hipThreadIdx_x);
     size_t stride = hipBlockDim_x * hipGridDim_x ;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     const unsigned threadsPerBlock = 256;
 
     printf ("info: launch 'vector_square' kernel\n");
-    hipLaunchKernel(vector_square<float>, dim3(blocks), dim3(threadsPerBlock), 0, 0, C_d, A_d, N);
+    hipLaunchKernelGGL(vector_square<float>, blocks, threadsPerBlock, 0, 0, C_d, A_d, N);
 
     printf ("info: copy Device2Host\n");
     CHECK ( hipMemcpy(C_h, C_d, Nbytes, hipMemcpyDeviceToHost));
