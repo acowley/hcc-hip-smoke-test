@@ -66,7 +66,7 @@ __global__ void diffusion(const int r, const int N, float* aA) {
 }
 
 void Acc() {
-  cout << "by hcc with array\n";
+  cout << "by hip\n";
   realp pvA[N];
 
   using clock = std::chrono::high_resolution_clock;
@@ -85,8 +85,9 @@ void Acc() {
   for(int i = 0; i < N; ++i) { pvA[i] = dist(mt); }
   pvA[0] = 0;
   pvA[N - 1] = 1;
-  // hipMemcpyHtoD(aA, pvA, N * sizeof(realp));
   hipMemcpy(aA, pvA, N*sizeof(realp), hipMemcpyHostToDevice);
+
+  hipDeviceSynchronize();
 
   auto t1 = clock::now();
 
@@ -95,11 +96,11 @@ void Acc() {
       hipLaunchKernelGGL(diffusion, 128, 64, 0, 0, r, N, aA);
     }
   }
-
+  hipDeviceSynchronize();
   auto t2 = clock::now();
-  // hipMemcpyDtoH(pvA, aA, (N/4+1)*sizeof(realp));
   hipMemcpy(pvA, aA, (N/4+1)*sizeof(realp), hipMemcpyDeviceToHost);
   realp res = pvA[N / 4];
+  hipDeviceSynchronize();
   auto t4 = clock::now();
 
   hipFree(aA);

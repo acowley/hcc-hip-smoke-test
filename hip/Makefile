@@ -6,8 +6,11 @@ square:	square.cpp
 	hipcc square.cpp -o square
 vadd:	vadd_hip.cpp
 	hipcc vadd_hip.cpp -o vadd_hip
+diffusion:	diffusion_hip.cpp
+	hipcc -O3 diffusion_hip.cpp -o diffusion
 
 # all: square.hip.out
+
 
 # square.cuda.out : square.cu
 #	nvcc square.cu -o $@
@@ -24,4 +27,4 @@ vadd:	vadd_hip.cpp
 
 
 clean:
-	rm -f *.o *.out square vadd_hip
+	rm -f *.o *.out square vadd_hip diffusion
