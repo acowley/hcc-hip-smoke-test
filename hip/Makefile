@@ -7,7 +7,7 @@ square:	square.cpp
 vadd:	vadd_hip.cpp
 	hipcc vadd_hip.cpp -o vadd_hip
 diffusion:	diffusion_hip.cpp
-	hipcc -O3 diffusion_hip.cpp -o diffusion
+	hipcc -ffast-math -O3 diffusion_hip.cpp -o diffusion
 
 # all: square.hip.out
 

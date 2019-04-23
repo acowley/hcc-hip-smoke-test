@@ -71,6 +71,11 @@ void Acc() {
 
   using clock = std::chrono::high_resolution_clock;
 
+  // Warmup the HIP runtime
+  float* aA;
+  hipMalloc(&aA, N*sizeof(realp));
+  hipLaunchKernelGGL(diffusion, 128, 64, 0, 0, 0, N, aA);
+
   // initialization.
   auto t0 = clock::now();
   std::mt19937 mt(19);
@@ -78,26 +83,31 @@ void Acc() {
   // std::generate_n(pvA, N, [&]() { return dist(mt); });
   // pvA[0] = 0;
   // pvA[N - 1] = 1;
-  
-  float* aA;
-  hipMalloc(&aA, N*sizeof(realp));
 
   for(int i = 0; i < N; ++i) { pvA[i] = dist(mt); }
   pvA[0] = 0;
   pvA[N - 1] = 1;
   hipMemcpy(aA, pvA, N*sizeof(realp), hipMemcpyHostToDevice);
-
   hipDeviceSynchronize();
+
+  hipEvent_t hstart, hstop;
+  hipEventCreate(&hstart);
+  hipEventCreate(&hstop);
 
   auto t1 = clock::now();
-
+  hipEventRecord(hstart, nullptr);
   for (int32_t cT = 0; cT < nT; cT++) {
     for (int32_t r = 0; r < 2; r++) {
-      hipLaunchKernelGGL(diffusion, 128, 64, 0, 0, r, N, aA);
+      hipLaunchKernelGGL(diffusion, 512, 256, 0, 0, r, N, aA);
     }
   }
+
+  hipEventRecord(hstop, nullptr);
+  hipEventSynchronize(hstop);
   hipDeviceSynchronize();
   auto t2 = clock::now();
+  float htime;
+  hipEventElapsedTime(&htime, hstart, hstop);
   hipMemcpy(pvA, aA, (N/4+1)*sizeof(realp), hipMemcpyDeviceToHost);
   realp res = pvA[N / 4];
   hipDeviceSynchronize();
@@ -115,6 +125,7 @@ void Acc() {
   cout << "Result = " << res << "\n";
   cout << "init = " << dt1 << "[s]\n";
   cout << "dt2 = " << dt2 << "[s]\n";
+  cout << "hiptime = " << htime << "[ms]\n";
   cout << "calc = " << dt4 << "[s]\n";
 
   cout << "Acc\n";
